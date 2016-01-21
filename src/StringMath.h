@@ -25,11 +25,16 @@
 // THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#ifndef _STRINGMATH_H_
+#define _STRINGMATH_H_
+
 #ifndef _WIN32
 // windows and its security checks
 #define sscanf_s sscanf
 #define sprintf_s snprintf
 #endif
+
+#include <TorqueLib/util/color.h>
 
 /**
  * String <-> Math conversion helpers. Templated for maximum efficiency.
@@ -129,6 +134,16 @@ namespace StringMath {
 		return p;
 	}
 	/**
+	 * Scan a QuatF to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a QuatF.
+	 */
+	template<> inline QuatF scan<QuatF>(const char *str) {
+		QuatF q;
+		sscanf_s(str, "%f %f %f %f", &q.w, &q.x, &q.y, &q.z);
+		return q;
+	}
+	/**
 	 * Scan an AngAxisF to a string.
 	 * @arg str The string to read from.
 	 * @return The string's value as an AngAxisF.
@@ -137,6 +152,18 @@ namespace StringMath {
 		AngAxisF a;
 		sscanf_s(str, "%f %f %f %f", &a.axis.x, &a.axis.y, &a.axis.z, &a.angle);
 		return a;
+	}
+	/**
+	 * Scan an ColorF to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a ColorF.
+	 */
+	template<> inline ColorF scan<ColorF>(const char *str) {
+		ColorF c;
+		sscanf_s(str, "%f %f %f %f", &c.red, &c.green, &c.blue, &c.alpha);
+		//Hack because sometimes the alpha is missing
+		c.alpha = 1.0;
+		return c;
 	}
 	/**
 	 * Scan a MatrixF to a string.
@@ -151,6 +178,31 @@ namespace StringMath {
 		a.setMatrix(&mat);
 		mat.setPosition(p);
 		return mat;
+	}
+	/**
+	 * Scan an OrthoF to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as an OrthoF.
+	 */
+	template<> inline OrthoF scan<OrthoF>(const char *str) {
+		OrthoF o;
+		sscanf_s(str, "%f %f %f %f %f %f %f %f %f",
+		         &o.right.x, &o.right.y, &o.right.z,
+		         &o.back.x,  &o.back.y,  &o.back.z,
+		         &o.down.x,  &o.down.y,  &o.down.z);
+		return o;
+	}
+	/**
+	* Scan a Box3F to a string.
+	* @arg str The string to read from.
+	* @return The string's value as a Box3F.
+	*/
+	template<> inline Box3F scan<Box3F>(const char *str) {
+		Box3F b;;
+		sscanf_s(str, "%f %f %f %f %f %f",
+			&b.minExtents.x, &b.minExtents.y, &b.minExtents.y,
+			&b.maxExtents.x, &b.maxExtents.y, &b.maxExtents.z);
+		return b;
 	}
 
 	/**
@@ -229,8 +281,8 @@ namespace StringMath {
 	 * @return The string value for that Point3F.
 	 */
 	template<> inline const char *print<Point3F>(const Point3F &val) {
-		char *ret = TGE::Con::getReturnBuffer(32);
-		sprintf_s(ret, 32, "%.7g %.7g %.7g", val.x, val.y, val.z);
+		char *ret = TGE::Con::getReturnBuffer(64);
+		sprintf_s(ret, 64, "%.7g %.7g %.7g", val.x, val.y, val.z);
 		return ret;
 	}
 	/**
@@ -244,6 +296,16 @@ namespace StringMath {
 		return ret;
 	}
 	/**
+	 * Print a QuatF to a string.
+	 * @arg val The QuatF to write to a string.
+	 * @return The string value for that Point3F.
+	 */
+	template<> inline const char *print<QuatF>(const QuatF &val) {
+		char *ret = TGE::Con::getReturnBuffer(64);
+		sprintf_s(ret, 64, "%.7g %.7g %.7g %.7g", val.w, val.x, val.y, val.z);
+		return ret;
+	}
+	/**
 	 * Print an AngAxisF to a string.
 	 * @arg val The AngAxisF to write to a string.
 	 * @return The string value for that AngAxisF.
@@ -251,6 +313,16 @@ namespace StringMath {
 	template<> inline const char *print<AngAxisF>(const AngAxisF &val) {
 		char *ret = TGE::Con::getReturnBuffer(64);
 		sprintf_s(ret, 64, "%.7g %.7g %.7g %.7g", val.axis.x, val.axis.y, val.axis.z, val.angle);
+		return ret;
+	}
+	/**
+	 * Print a ColorF to a string.
+	 * @arg val The ColorF to write to a string.
+	 * @return The string value for that AngAxisF.
+	 */
+	template<> inline const char *print<ColorF>(const ColorF &val) {
+		char *ret = TGE::Con::getReturnBuffer(64);
+		sprintf_s(ret, 64, "%.7g %.7g %.7g %.7g", val.red, val.green, val.blue, val.alpha);
 		return ret;
 	}
 	/**
@@ -266,4 +338,31 @@ namespace StringMath {
 		sprintf_s(ret, 128, "%.7g %.7g %.7g %.7g %.7g %.7g %.7g", p.x, p.y, p.z, a.axis.x, a.axis.y, a.axis.z, a.angle);
 		return ret;
 	}
+	/**
+	 * Print an OrthoF to a string.
+	 * @arg val The OrthoF to write to a string.
+	 * @return The string value for that OrthoF.
+	 */
+	template<> inline const char *print<OrthoF>(const OrthoF &val) {
+		char *ret = TGE::Con::getReturnBuffer(256);
+		sprintf_s(ret, 256, "%f %f %f %f %f %f %f %f %f",
+				  val.right.x, val.right.y, val.right.z,
+				  val.back.x,  val.back.y,  val.back.z,
+				  val.down.x,  val.down.y,  val.down.z);
+		return ret;
+	}
+	/**
+	* Print a Box3F to a string.
+	* @arg val The Box3F to write to a string.
+	* @return The string value for that Box3F.
+	*/
+	template<> inline const char *print<Box3F>(const Box3F &val) {
+		char *ret = TGE::Con::getReturnBuffer(256);
+		sprintf_s(ret, 256, "%f %f %f %f %f %f",
+			val.minExtents.x, val.minExtents.y, val.minExtents.z,
+			val.maxExtents.x, val.maxExtents.y, val.maxExtents.z);
+		return ret;
+	}
 }
+
+#endif
