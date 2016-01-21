@@ -98,9 +98,11 @@ math64(mod64, a = fmod(a, b));
  * Rounding functions:
  *  - Floor (round down)
  *  - Ceiling (round up)
+ *  - Round (up or down)
  */
 round64(floor64, a = floor(a));
 round64(ceil64, a = ceil(a));
+round64(round64, a = round(a));
 
 /**
  * Basic integer math functions:
