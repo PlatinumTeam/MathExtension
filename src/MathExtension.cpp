@@ -32,6 +32,7 @@
 #include <PluginLoader/PluginInterface.h>
 #include <TorqueLib/TGE.h>
 #include <TorqueLib/math/mMath.h>
+#include <sstream>
 
 #include "MathExtension.h"
 
@@ -47,51 +48,6 @@ PLUGINCALLBACK void engineShutdown(PluginInterface *plugin)
 {
 }
 	
-/**
- * Gets the 2D point in the view from (-1,-1) to (1,1) corresponding to a point in 2D space
- * @arg transform The current camera transformation
- * @arg worldSpace The point to project, in world space
- * @arg fov The field of view
- * @arg recurse Internally used for backwards angles.
- */
-Point2F getGuiSpace(const MatrixF &transform, const Point3F &worldSpace, const F32 fov, bool recurse)
-{
-	//Default game attributes
-	const Point2I extent = TGE::Canvas->getExtent();
-	const F32 aspect = (F32)extent.x / (F32)extent.y;
-	const Point3F forward = transform.getForwardVector();
-
-	Point3F diff = worldSpace - transform.getPosition();
-	Point3F projOut = VectorRej(diff, forward);
-
-	MatrixF mat = transform;
-	mat.inverse();
-	mat.mulV(projOut);
-	Point3F projRot = projOut; // keeping it consitent with whirligig code
-
-	const F32 dist = VectorProjLen(diff, forward);
-
-	if (dist < 0.0f && !recurse) {
-		//Behind you, rotate the point and do some math
-		Point3F pos = worldSpace + ((transform.getPosition() - worldSpace) * 2.0f);
-		Point2F result = getGuiSpace(transform, pos, fov, true) * -1;
-		//Since it's behind you, we need to scale to the edge of the screen
-		//Sqrt 2 will get us out of bounds, even in the corners
-		result.normalizeSafe();
-		result *= mSqrt(2.0f);
-		return result;
-	}
-
-	F32 slopeP = mTan(fov / 2.0f*M_PI_F / 180.0f);
-	F32 slopeX = projRot.x / dist;
-	F32 slopeY = projRot.z / dist;
-	F32 projX = slopeX / slopeP;
-	F32 projY = slopeY / slopeP;
-	projY *= aspect;
-	Point2F result(projX, -projY);
-	return result;
-}
-
 /**
  * Gets the 2D point in the view from (-1,-1) to (1,1) corresponding to a point in 2D space
  * @arg transform The current camera transformation
@@ -299,4 +255,183 @@ ConsoleFunction(mClamp, F32, 4, 4, "mClamp(F32 n, F32 min, F32 max)") {
 	F32 max = StringMath::scan<F32>(argv[3]);
 	F32 ret = mClampF(n, min, max);
 	return ret;
+}
+
+/**
+* Checks to see if a point is inside of a box.
+* @arg point the point to test if it rests within the box.
+* @arg box the box defined by a min and max.
+* @arg checkBoundsToo test if the point can rest on the bounding box as well.
+* @return true if the point is within the box, false otherwise.
+*/
+ConsoleFunction(isPointInsideBox, bool, 3, 4, "isPointInsideBox(%point, %box [, %checkBoundsToo]);") {
+	Point3F point;
+	Point3F min;
+	Point3F max;
+	sscanf(argv[1], "%f %f %f", &point.x, &point.y, &point.z);
+	sscanf(argv[2], "%f %f %f %f %f %f", &min.x, &min.y, &min.z, &max.x, &max.y, &max.z);
+
+	// do not check the bounds, only inside
+	if (argc == 3)
+		return (point.x > min.x && point.x < max.x && point.y > min.y && point.y < max.y && point.z > min.z && point.z < max.z);
+	return (point.x >= min.x && point.x <= max.x && point.y >= min.y && point.y <= max.y && point.z >= min.z && point.z <= max.z);
+}
+//scales x by sx, y by sy, z by sz, instead of scaling x y z by s
+ConsoleFunction(VectorScale2, const char *, 3, 3, "VectorScale2(Point3F u, Point3F v)") {
+	Point3F u = StringMath::scan<Point3F>(argv[1]);
+	Point3F v = StringMath::scan<Point3F>(argv[2]);
+
+	Point3F ret = VectorScale2(u, v);
+	return StringMath::print(ret);
+}
+
+//returns scalar distance based on input
+ConsoleFunction(getThatDistance, F32, 4, 4, "getThatDistance(Point3F posOld, Point3F posNew, bool xyd)") {
+	Point3F posold = StringMath::scan<Point3F>(argv[1]);
+	Point3F posnew = StringMath::scan<Point3F>(argv[2]);
+	bool xyd = atoi(argv[3]) != 0;
+
+	Point3F dist = posold - posnew;
+	if (xyd) {
+		return Point2F(dist.x, dist.y).len();
+	} else {
+		return dist.len();
+	}
+}
+
+ConsoleFunction(rotAAtoQ, const char *, 2, 2, "rotAAtoQ(AngAxisF aa)") {
+	AngAxisF aa = StringMath::scan<AngAxisF>(argv[1]);
+	return StringMath::print(rotAAtoQ(aa));
+}
+
+ConsoleFunction(rotQadd, const char *, 3, 3, "rotQadd(QuatF q1, QuatF q2)") {
+	QuatF q1 = StringMath::scan<QuatF>(argv[1]);
+	QuatF q2 = StringMath::scan<QuatF>(argv[2]);
+	return StringMath::print(rotQadd(q1, q2));
+}
+
+ConsoleFunction(rotQmultiply, const char *, 3, 3, "rotQmultiply(QuatF q1, QuatF q2)") {
+	QuatF q1 = StringMath::scan<QuatF>(argv[1]);
+	QuatF q2 = StringMath::scan<QuatF>(argv[2]);
+	return StringMath::print(rotQmultiply(q1, q2));
+}
+
+ConsoleFunction(rotQnormalize, const char *, 2, 2, "rotQnormalize(QuatF q)") {
+	QuatF q = StringMath::scan<QuatF>(argv[1]);
+	return StringMath::print(rotQnormalize(q));
+}
+
+ConsoleFunction(rotQinvert, const char *, 2, 2, "rotQinvert(QuatF q)") {
+	QuatF q = StringMath::scan<QuatF>(argv[1]);
+	return StringMath::print(rotQinvert(q));
+}
+
+ConsoleFunction(rotQtoVector, const char *, 3, 3, "rotQtoVector(QuatF q, VectorF v)") {
+	QuatF q = StringMath::scan<QuatF>(argv[1]);
+	VectorF v = StringMath::scan<VectorF>(argv[2]);
+	return StringMath::print(rotQtoVector(q, v));
+}
+
+ConsoleFunction(rotQtoAA, const char *, 2, 2, "rotQtoAA(QuatF q)") {
+	QuatF q = StringMath::scan<QuatF>(argv[1]);
+	return StringMath::print(rotQtoAA(q));
+}
+
+ConsoleFunction(rotToVector, const char *, 3, 3, "rotToVector(AngAxisF aa, VectorF v)") {
+	AngAxisF aa = StringMath::scan<AngAxisF>(argv[1]);
+	VectorF v = StringMath::scan<VectorF>(argv[2]);
+	return StringMath::print(rotToVector(aa, v));
+}
+
+ConsoleFunction(rotEtoAA, const char *, 3, 3, "rotEtoAA(EulerF euler, bool radians)") {
+	EulerF euler = StringMath::scan<EulerF>(argv[1]);
+	bool radians = atoi(argv[2]) != 0;
+	return StringMath::print(rotEtoAA(euler, radians));
+}
+
+ConsoleFunction(rotVectorToAA, const char *, 2, 2, "rotVectorToAA(VectorF v)") {
+	VectorF v = StringMath::scan<VectorF>(argv[1]);
+	return StringMath::print(rotVectorToAA(v));
+}
+
+ConsoleFunction(isOffScreen, bool, 2, 2, "isOffScreen(Point2F point)") {
+	Point2F point = StringMath::scan<Point2F>(argv[1]);
+	return isOffScreen(point);
+}
+
+/**
+ * Get the bezier curve coefficient for a point
+ * @param n The order of the curve
+ * @param i The point's index on the curve
+ * @param u The current distance on the curve (normalized)
+ * @return The factor by which this point's influence should be scaled
+ */
+ConsoleFunction(mBez, F32, 4, 4, "mBez(U32 n, U32 i, F32 u)") {
+	U32 n = StringMath::scan<U32>(argv[1]);
+	U32 i = StringMath::scan<U32>(argv[2]);
+	F32 u = StringMath::scan<F32>(argv[3]);
+	return mBez(n, i, u);
+}
+
+/**
+ * Bezier curve between points
+ * @param u          The current distance on the curve (normalized)
+ * @param v1 v2, ... A tab-separated list of vectors
+ * @return The point on the curve at the given distance
+ */
+ConsoleFunction(VectorBezier, const char *, 3, 3, "VectorBezier(F32 u, VectorF v1 TAB [VectorF v2 TAB [...]])") {
+	F32 u = StringMath::scan<F32>(argv[1]);
+	std::vector<Point3F> points;
+
+	//Read all the points from argv[2], they should be separated by tabs
+	std::stringstream ss(argv[2]);
+	char line[64];
+	while (ss.getline(line, 64, '\t')) {
+		points.push_back(StringMath::scan<Point3F>(line));
+	}
+
+	Point3F final = VectorBezier(u, points);
+	return StringMath::print(final);
+}
+
+/**
+ * Bezier curve derivative between points
+ * @param u          The current distance on the curve (normalized)
+ * @param v1 v2, ... A tab-separated list of vectors
+ * @return The derivative of the curve at the given distance
+ */
+ConsoleFunction(VectorBezierDeriv, const char *, 3, 3, "VectorBezierDeriv(F32 u, VectorF v1 TAB [VectorF v2 [TAB ...]])") {
+	F32 u = StringMath::scan<F32>(argv[1]);
+	std::vector<Point3F> points;
+
+	//Read all the points from argv[2], they should be separated by tabs
+	std::stringstream ss(argv[2]);
+	char line[64];
+	while (ss.getline(line, 64, '\t')) {
+		points.push_back(StringMath::scan<Point3F>(line));
+	}
+	
+	Point3F final = VectorBezierDeriv(u, points);
+	return StringMath::print(final);
+}
+
+/**
+ * Bezier curve between rotations
+ * @param u          The current distance on the curve (normalized)
+ * @param a1, a2 ... A tab-separated list of axis-angle rotations for the curve
+ * @return The rotation along the curve at the given distance
+ */
+ConsoleFunction(RotBezier, const char *, 3, 3, "RotBezier(F32 u, AngAxisF a1 TAB [AngAxisF a2 [TAB ...]])") {
+	F32 u = StringMath::scan<F32>(argv[1]);
+	std::vector<AngAxisF> points;
+
+	//Read all the rotations from argv[2], they should be separated by tabs
+	std::stringstream ss(argv[2]);
+	char line[64];
+	while (ss.getline(line, 64, '\t')) {
+		points.push_back(StringMath::scan<AngAxisF>(line));
+	}
+
+	AngAxisF final = RotBezier(u, points);
+	return StringMath::print(final);
 }
