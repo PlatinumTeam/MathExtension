@@ -28,7 +28,11 @@
 #ifndef _STRINGMATH_H_
 #define _STRINGMATH_H_
 
-#ifndef _WIN32
+#include <string.h>
+
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#else
 // windows and its security checks
 #define sscanf_s sscanf
 #define sprintf_s snprintf
@@ -54,6 +58,49 @@ namespace StringMath {
 	template <typename T> const char *print(const T &val);
 
 	/**
+	 * Scan a bool to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a bool.
+	 */
+	template<> inline bool scan<bool>(const char *str) {
+		if (strcasecmp(str, "false") == 0) return false;
+		if (strcasecmp(str, "0") == 0) return false;
+		if (*str == 0) return false;
+		return true;
+	}
+	/**
+	 * Scan a U8 to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a U8.
+	 */
+	template<> inline U8 scan<U8>(const char *str) {
+		return atoi(str);
+	}
+	/**
+	 * Scan a S8 to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a S8.
+	 */
+	template<> inline S8 scan<S8>(const char *str) {
+		return atoi(str);
+	}
+	/**
+	 * Scan a U16 to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a U16.
+	 */
+	template<> inline U16 scan<U16>(const char *str) {
+		return atoi(str);
+	}
+	/**
+	 * Scan a S16 to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a S16.
+	 */
+	template<> inline S16 scan<S16>(const char *str) {
+		return atoi(str);
+	}
+	/**
 	 * Scan a U32 to a string.
 	 * @arg str The string to read from.
 	 * @return The string's value as a U32.
@@ -75,6 +122,14 @@ namespace StringMath {
 	 * @return The string's value as a U64.
 	 */
 	template<> inline U64 scan<U64>(const char *str) {
+		return atoll(str);
+	}
+	/**
+	 * Scan a S64 to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a S64.
+	 */
+	template<> inline S64 scan<S64>(const char *str) {
 		return atoll(str);
 	}
 	/**
@@ -166,6 +221,18 @@ namespace StringMath {
 		return c;
 	}
 	/**
+	 * Scan an ColorI to a string.
+	 * @arg str The string to read from.
+	 * @return The string's value as a ColorI.
+	 */
+	template<> inline ColorI scan<ColorI>(const char *str) {
+		ColorI c;
+		sscanf_s(str, "%hhu %hhu %hhu %hhu", &c.red, &c.green, &c.blue, &c.alpha);
+		//Hack because sometimes the alpha is missing
+		c.alpha = 255;
+		return c;
+	}
+	/**
 	 * Scan a MatrixF to a string.
 	 * @arg str The string to read from.
 	 * @return The string's value as a MatrixF.
@@ -206,13 +273,61 @@ namespace StringMath {
 	}
 
 	/**
+	 * Print a bool to a string.
+	 * @arg val The bool to write to a string.
+	 * @return The string value for that bool.
+	 */
+	template<> inline const char *print<bool>(const bool &val) {
+		return val ? "true" : "false";
+	}
+	/**
+	 * Print a U8 to a string.
+	 * @arg val The U8 to write to a string.
+	 * @return The string value for that U8.
+	 */
+	template<> inline const char *print<U8>(const U8 &val) {
+		char *ret = TGE::Con::getReturnBuffer(8);
+		sprintf_s(ret, 8, "%hhu", val);
+		return ret;
+	}
+	/**
+	* Print a S8 to a string.
+	* @arg val The S8 to write to a string.
+	* @return The string value for that S8.
+	*/
+	template<> inline const char *print<S8>(const S8 &val) {
+		char *ret = TGE::Con::getReturnBuffer(8);
+		sprintf_s(ret, 8, "%hhd", val);
+		return ret;
+	}
+	/**
+	 * Print a U16 to a string.
+	 * @arg val The U16 to write to a string.
+	 * @return The string value for that U16.
+	 */
+	template<> inline const char *print<U16>(const U16 &val) {
+		char *ret = TGE::Con::getReturnBuffer(8);
+		sprintf_s(ret, 8, "%hu", val);
+		return ret;
+	}
+	/**
+	* Print a S16 to a string.
+	* @arg val The S16 to write to a string.
+	* @return The string value for that S16.
+	*/
+	template<> inline const char *print<S16>(const S16 &val) {
+		char *ret = TGE::Con::getReturnBuffer(8);
+		sprintf_s(ret, 8, "%hd", val);
+		return ret;
+	}
+	/**
 	 * Print a U32 to a string.
 	 * @arg val The U32 to write to a string.
 	 * @return The string value for that U32.
 	 */
 	template<> inline const char *print<U32>(const U32 &val) {
 		char *ret = TGE::Con::getReturnBuffer(16);
-		sprintf_s(ret, 16, "%d", val);
+		sprintf_s(ret, 16, "%u", val);
 		return ret;
 	}
 	/**
@@ -231,6 +346,16 @@ namespace StringMath {
 	 * @return The string value for that U64.
 	 */
 	template<> inline const char *print<U64>(const U64 &val) {
+		char *ret = TGE::Con::getReturnBuffer(32);
+		sprintf_s(ret, 32, "%llu", val);
+		return ret;
+	}
+	/**
+	 * Print a S64 to a string.
+	 * @arg val The S64 to write to a string.
+	 * @return The string value for that S64.
+	 */
+	template<> inline const char *print<S64>(const S64 &val) {
 		char *ret = TGE::Con::getReturnBuffer(32);
 		sprintf_s(ret, 32, "%lld", val);
 		return ret;
@@ -318,11 +443,21 @@ namespace StringMath {
 	/**
 	 * Print a ColorF to a string.
 	 * @arg val The ColorF to write to a string.
-	 * @return The string value for that AngAxisF.
+	 * @return The string value for that ColorF.
 	 */
 	template<> inline const char *print<ColorF>(const ColorF &val) {
 		char *ret = TGE::Con::getReturnBuffer(64);
 		sprintf_s(ret, 64, "%.7g %.7g %.7g %.7g", val.red, val.green, val.blue, val.alpha);
+		return ret;
+	}
+	/**
+	 * Print a ColorI to a string.
+	 * @arg val The ColorI to write to a string.
+	 * @return The string value for that ColorI.
+	 */
+	template<> inline const char *print<ColorI>(const ColorI &val) {
+		char *ret = TGE::Con::getReturnBuffer(32);
+		sprintf_s(ret, 32, "%hhu %hhu %hhu %hhu", val.red, val.green, val.blue, val.alpha);
 		return ret;
 	}
 	/**

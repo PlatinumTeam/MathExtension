@@ -238,7 +238,7 @@ ConsoleFunction(removeScientificNotation, const char *, 2, 2, "removeScientificN
  */
 ConsoleFunction(mFact, const char *, 2, 2, "mFact(U32 val)") {
 	U64 val = StringMath::scan<U64>(argv[1]);
-	U64 ret = mFact(val);
+	U64 ret = mFact(static_cast<U32>(val));
 	return StringMath::print(ret);
 }
 

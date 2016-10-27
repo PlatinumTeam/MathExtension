@@ -434,7 +434,7 @@ inline F32 mBez(const U32 &n, const U32 &i, const F32 &u) {
 	//B_n,i(u) = --------  u^i (1-u)^(n-i)
 	//           i!(n-i)!
 
-	return mFact(n) / (mFact(i) * mFact(n - i)) * mPow(u, i) * mPow(1 - u, n - i);
+	return mFact(n) / (mFact(i) * mFact(n - i)) * mPow(static_cast<F32>(u), static_cast<F32>(i)) * mPow(1.0f - u, static_cast<F32>(n - i));
 }
 
 /**
@@ -483,7 +483,7 @@ inline Point3F VectorBezierDeriv(const F32 &u, const std::vector<Point3F> &point
 		Point3F p_i1 = points[i + 1];
 
 		//Q_i = n(P_i+1 - P_i)
-		Point3F q_i = (p_i1 - p_i) * n;
+		Point3F q_i = (p_i1 - p_i) * static_cast<F32>(n);
 
 		//       n-1
 		//C'(u) = ∑  B_n-1,i(u) * Q_i
